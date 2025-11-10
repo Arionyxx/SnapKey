@@ -47,6 +47,15 @@ function initializeManagers() {
   console.log('[Main] Initializing managers...');
   settingsManager = new SettingsManager();
   hookManager = new HookManager();
+
+  // Initialize hook manager with current settings
+  hookManager.setSettings(settingsManager.getSettings());
+
+  // Listen to settings changes and update hook manager
+  settingsManager.onChange((settings) => {
+    hookManager.setSettings(settings);
+  });
+
   ipcHandlers = new IpcHandlers(settingsManager, hookManager);
   console.log('[Main] All managers initialized successfully');
 }

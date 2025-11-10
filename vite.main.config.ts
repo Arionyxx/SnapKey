@@ -8,4 +8,9 @@ export default defineConfig({
       '@shared': resolve(__dirname, './src/shared'),
     },
   },
+  build: {
+    rollupOptions: {
+      external: ['koffi', 'uiohook-napi'],
+    },
+  },
 });

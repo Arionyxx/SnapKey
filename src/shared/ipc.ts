@@ -15,6 +15,7 @@ export const IPC_CHANNELS = {
   HOOK_STATUS_GET: 'hook:status:get',
   HOOK_STATUS_UPDATED: 'hook:status:updated',
   HOOK_TOGGLE: 'hook:toggle',
+  HOOK_DIAGNOSTICS_GET: 'hook:diagnostics:get',
 
   // Process Queries
   PROCESS_LIST: 'process:list',
@@ -53,6 +54,16 @@ export const hookStatusSchema = z.object({
   lastError: z.string().nullable(),
 });
 
+// Hook Diagnostics Schema
+export const hookDiagnosticsSchema = z.object({
+  totalEventsProcessed: z.number(),
+  keyDownEvents: z.number(),
+  keyUpEvents: z.number(),
+  simulatedEvents: z.number(),
+  conflictsResolved: z.number(),
+  lastError: z.string().nullable(),
+});
+
 // Process Info Schema
 export const processInfoSchema = z.object({
   pid: z.number(),
@@ -83,6 +94,7 @@ export const trayStatusSchema = z.object({
 export type Settings = z.infer<typeof settingsSchema>;
 export type PartialSettings = z.infer<typeof partialSettingsSchema>;
 export type HookStatus = z.infer<typeof hookStatusSchema>;
+export type HookDiagnostics = z.infer<typeof hookDiagnosticsSchema>;
 export type ProcessInfo = z.infer<typeof processInfoSchema>;
 export type ProcessList = z.infer<typeof processListSchema>;
 export type ActiveProcess = z.infer<typeof activeProcessSchema>;

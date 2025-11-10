@@ -1,8 +1,15 @@
-import { HookStatus, DEFAULT_HOOK_STATUS } from '../shared/ipc';
+import { HookStatus, DEFAULT_HOOK_STATUS, Settings } from '../shared/ipc';
+import {
+  KeyboardHookService,
+  KeyboardHookConfig,
+  KeyGroup,
+} from './services/keyboard-hook-service';
 
 export class HookManager {
   private status: HookStatus;
   private listeners: Array<(status: HookStatus) => void> = [];
+  private hookService: KeyboardHookService | null = null;
+  private currentSettings: Settings | null = null;
 
   constructor() {
     this.status = { ...DEFAULT_HOOK_STATUS };
@@ -12,11 +19,70 @@ export class HookManager {
     return { ...this.status };
   }
 
+  setSettings(settings: Settings): void {
+    console.log('[Hook] Updating settings:', settings);
+    this.currentSettings = settings;
+
+    if (this.hookService) {
+      const config = this.buildConfig(settings, this.status.enabled);
+      this.hookService.updateConfig(config);
+    }
+  }
+
+  private buildConfig(settings: Settings, enabled: boolean): KeyboardHookConfig {
+    const keyGroups: KeyGroup[] = this.buildKeyGroups(settings.enabledKeys);
+
+    return {
+      enabled,
+      keyGroups,
+      enabledKeys: settings.enabledKeys,
+    };
+  }
+
+  private buildKeyGroups(enabledKeys: string[]): KeyGroup[] {
+    const groups: KeyGroup[] = [];
+
+    // Create opposing key groups (W-S and A-D)
+    const verticalKeys = enabledKeys.filter((k) => k === 'W' || k === 'S');
+    const horizontalKeys = enabledKeys.filter((k) => k === 'A' || k === 'D');
+
+    if (verticalKeys.length > 1) {
+      groups.push({
+        keys: verticalKeys,
+        allowSimultaneous: false,
+      });
+    }
+
+    if (horizontalKeys.length > 1) {
+      groups.push({
+        keys: horizontalKeys,
+        allowSimultaneous: false,
+      });
+    }
+
+    return groups;
+  }
+
   enable(): HookStatus {
     console.log('[Hook] Enabling keyboard hook...');
     try {
-      // TODO: Implement actual keyboard hook registration
-      // This is a placeholder that will be implemented in future tickets
+      if (!this.currentSettings) {
+        throw new Error('Settings not initialized');
+      }
+
+      if (!this.hookService) {
+        const config = this.buildConfig(this.currentSettings, true);
+        this.hookService = new KeyboardHookService(config);
+
+        // Listen to hook service status changes
+        this.hookService.onStatusChange((serviceStatus) => {
+          this.status.activeKeys = serviceStatus.activeKeys;
+          this.notifyListeners();
+        });
+      }
+
+      this.hookService.start();
+
       this.status = {
         enabled: true,
         activeKeys: [],
@@ -41,8 +107,10 @@ export class HookManager {
   disable(): HookStatus {
     console.log('[Hook] Disabling keyboard hook...');
     try {
-      // TODO: Implement actual keyboard hook unregistration
-      // This is a placeholder that will be implemented in future tickets
+      if (this.hookService) {
+        this.hookService.stop();
+      }
+
       this.status = {
         enabled: false,
         activeKeys: [],
@@ -89,9 +157,20 @@ export class HookManager {
     this.listeners.forEach(listener => listener(this.getStatus()));
   }
 
+  getDiagnostics() {
+    if (this.hookService) {
+      return this.hookService.getDiagnostics();
+    }
+    return null;
+  }
+
   cleanup(): void {
     if (this.status.enabled) {
       this.disable();
+    }
+    if (this.hookService) {
+      this.hookService.cleanup();
+      this.hookService = null;
     }
   }
 }
