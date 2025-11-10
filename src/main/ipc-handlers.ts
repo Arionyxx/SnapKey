@@ -66,6 +66,13 @@ export class IpcHandlers {
       });
     });
 
+    ipcMain.handle(IPC_CHANNELS.HOOK_DIAGNOSTICS_GET, () => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling HOOK_DIAGNOSTICS_GET');
+        return this.hookManager.getDiagnostics();
+      });
+    });
+
     // Process handlers
     ipcMain.handle(IPC_CHANNELS.PROCESS_LIST, () => {
       return this.handleRequest(() => {

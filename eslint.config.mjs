@@ -8,7 +8,17 @@ import prettier from 'eslint-config-prettier';
 export default [
   eslint.configs.recommended,
   {
-    ignores: ['.vite/**', 'out/**', 'node_modules/**', 'legacy/**'],
+    ignores: [
+      '.vite/**',
+      'out/**',
+      'node_modules/**',
+      'legacy/**',
+      '**/__tests__/**',
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      'jest.config.js',
+      'src/__tests__/setup.ts',
+    ],
   },
   {
     files: ['**/*.{ts,tsx}'],
