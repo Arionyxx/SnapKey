@@ -1,5 +1,10 @@
 [![testsnap](https://github.com/user-attachments/assets/e9a23ba9-d394-4711-abfc-994932605d86)](https://github.com/cafali/SnapKey/releases)
 
+> **🚀 SnapKey 2.0 Development**  
+> We're rebuilding SnapKey with Electron, TypeScript, and React for a modern, maintainable codebase!  
+> See [README.electron.md](./README.electron.md) for development information.  
+> The legacy C++ implementation is now in the [`legacy/`](./legacy/) folder.
+
 **About SnapKey** 
 --------------------------------------------------------------------------------------------------
 SnapKey provides a user-friendly alternative to the Razer Snap Tap function, making it accessible across all keyboards!
