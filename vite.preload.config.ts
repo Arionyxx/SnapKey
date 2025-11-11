@@ -8,4 +8,16 @@ export default defineConfig({
       '@shared': resolve(__dirname, './src/shared'),
     },
   },
+  build: {
+    lib: {
+      entry: 'src/preload/index.ts',
+      formats: ['es'],
+    },
+    rollupOptions: {
+      output: {
+        format: 'es',
+        entryFileNames: '[name].js',
+      },
+    },
+  },
 });
