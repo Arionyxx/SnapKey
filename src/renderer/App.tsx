@@ -153,7 +153,13 @@ function App() {
             {settings && (
               <ul>
                 <li>Theme: {settings.theme}</li>
-                <li>Enabled Keys: {settings.enabledKeys.join(', ')}</li>
+                <li>
+                  Active Profile:{' '}
+                  {settings.profiles.find(p => p.id === settings.activeProfileId)?.name || 'None'}
+                </li>
+                <li>Total Profiles: {settings.profiles.length}</li>
+                <li>Fullscreen Only: {settings.fullscreenOnly ? 'Yes' : 'No'}</li>
+                <li>Target Process: {settings.targetProcess || 'None'}</li>
                 <li>Start on Boot: {settings.startOnBoot ? 'Yes' : 'No'}</li>
                 <li>Minimize to Tray: {settings.minimizeToTray ? 'Yes' : 'No'}</li>
                 <li>Show Notifications: {settings.showNotifications ? 'Yes' : 'No'}</li>

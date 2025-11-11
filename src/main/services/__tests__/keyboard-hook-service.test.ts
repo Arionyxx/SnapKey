@@ -31,7 +31,9 @@ import { uIOhook } from 'uiohook-napi';
 import * as win32Input from '../../native/win32-input';
 
 const mockUIOhook = uIOhook as jest.Mocked<typeof uIOhook>;
-const mockSendKeyDown = win32Input.sendKeyDown as jest.MockedFunction<typeof win32Input.sendKeyDown>;
+const mockSendKeyDown = win32Input.sendKeyDown as jest.MockedFunction<
+  typeof win32Input.sendKeyDown
+>;
 const mockSendKeyUp = win32Input.sendKeyUp as jest.MockedFunction<typeof win32Input.sendKeyUp>;
 
 describe('KeyboardHookService', () => {
