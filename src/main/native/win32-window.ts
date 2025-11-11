@@ -83,10 +83,10 @@ function initWin32Window(): void {
 
     // Define callback type for EnumWindows
     // @ts-expect-error - Used by koffi for type information
-    const _EnumWindowsProc = koffi.proto('bool EnumWindowsProc(void *hwnd, long_ptr lParam)');
+    const _EnumWindowsProc = koffi.proto('bool EnumWindowsProc(void *hwnd, isize lParam)');
 
     // Load functions
-    enumWindowsFunc = user32.func('bool EnumWindows(EnumWindowsProc lpEnumFunc, long_ptr lParam)');
+    enumWindowsFunc = user32.func('bool EnumWindows(EnumWindowsProc lpEnumFunc, isize lParam)');
     getForegroundWindowFunc = user32.func('void *GetForegroundWindow()');
     getWindowThreadProcessIdFunc = user32.func(
       'uint GetWindowThreadProcessId(void *hWnd, _Out_ uint *lpdwProcessId)'
@@ -96,7 +96,7 @@ function initWin32Window(): void {
     );
     getWindowRectFunc = user32.func('bool GetWindowRect(void *hWnd, _Out_ RECT *lpRect)');
     isWindowVisibleFunc = user32.func('bool IsWindowVisible(void *hWnd)');
-    getWindowLongPtrWFunc = user32.func('long_ptr GetWindowLongPtrW(void *hWnd, int nIndex)');
+    getWindowLongPtrWFunc = user32.func('isize GetWindowLongPtrW(void *hWnd, int nIndex)');
     getWindowFunc = user32.func('void *GetWindow(void *hWnd, uint uCmd)');
     monitorFromWindowFunc = user32.func('void *MonitorFromWindow(void *hwnd, uint dwFlags)');
     getMonitorInfoWFunc = user32.func(
@@ -114,7 +114,7 @@ function initWin32Window(): void {
     console.log('[Win32Window] Win32 window API initialized successfully');
   } catch (error) {
     console.error('[Win32Window] Failed to initialize Win32 window API:', error);
-    throw error;
+    console.warn('[Win32Window] Continuing without Win32 window API support');
   }
 }
 
@@ -417,7 +417,7 @@ export function enumerateWindows(): WindowInfo[] {
         // Ignore errors in individual windows
       }
       return true; // Continue enumeration
-    }, koffi.proto('bool EnumWindowsProc(void *hwnd, long_ptr lParam)'));
+    }, koffi.proto('bool EnumWindowsProc(void *hwnd, isize lParam)'));
 
     enumWindowsFunc(callback, 0);
     koffi.unregister(callback);

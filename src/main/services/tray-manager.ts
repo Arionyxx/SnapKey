@@ -1,8 +1,14 @@
 import { Tray, Menu, nativeImage, BrowserWindow, app } from 'electron';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { HookStatus } from '../../shared/ipc';
 import type { SettingsManager } from '../settings';
 import type { HookManager } from '../hook';
+
+// ESM compatibility shim for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export class TrayManager {
   private tray: Tray | null = null;
@@ -15,13 +21,14 @@ export class TrayManager {
 
   constructor() {
     // Icon paths - use resources path in production, legacy folder in dev
-    const basePath = app.isPackaged
-      ? process.resourcesPath
-      : path.join(__dirname, '../../legacy');
-    
+    const basePath = app.isPackaged ? process.resourcesPath : path.join(__dirname, '../../legacy');
+
     this.iconPath = path.join(basePath, 'icon.ico');
     this.iconOffPath = path.join(basePath, 'icon_off.ico');
-    console.log('[TrayManager] Icon paths configured:', { iconPath: this.iconPath, iconOffPath: this.iconOffPath });
+    console.log('[TrayManager] Icon paths configured:', {
+      iconPath: this.iconPath,
+      iconOffPath: this.iconOffPath,
+    });
   }
 
   initialize(
