@@ -23,7 +23,11 @@ export class IpcHandlers {
   private hookManager: HookManager;
   private windowManager: WindowManager;
 
-  constructor(settingsManager: SettingsManager, hookManager: HookManager, windowManager: WindowManager) {
+  constructor(
+    settingsManager: SettingsManager,
+    hookManager: HookManager,
+    windowManager: WindowManager
+  ) {
     this.settingsManager = settingsManager;
     this.hookManager = hookManager;
     this.windowManager = windowManager;
@@ -217,7 +221,7 @@ export class IpcHandlers {
           targetProcess: settings.targetProcess,
           fullscreenOnly: settings.fullscreenOnly,
         });
-        
+
         const windowState: WindowState = {
           process: state.process,
           isFullscreen: state.isFullscreen,
@@ -295,7 +299,7 @@ export class IpcHandlers {
     });
 
     // Listen to window state changes and broadcast to all windows
-    this.windowManager.onChange((state) => {
+    this.windowManager.onChange(state => {
       const settings = this.settingsManager.getSettings();
       const conditionsMet = this.windowManager.checkConditions({
         targetProcess: settings.targetProcess,

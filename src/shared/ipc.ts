@@ -119,12 +119,14 @@ export const processInfoSchema = z.object({
 export const processListSchema = z.array(processInfoSchema);
 
 // Active Process Schema
-export const activeProcessSchema = z.object({
-  pid: z.number(),
-  name: z.string(),
-  path: z.string(),
-  title: z.string(),
-}).nullable();
+export const activeProcessSchema = z
+  .object({
+    pid: z.number(),
+    name: z.string(),
+    path: z.string(),
+    title: z.string(),
+  })
+  .nullable();
 
 // Window State Schema
 export const windowStateSchema = z.object({

@@ -189,7 +189,7 @@ export class WindowManager {
 
     try {
       const windows = enumerateWindows();
-      
+
       // Deduplicate by process path and collect unique processes
       const processMap = new Map<string, ProcessWithWindow>();
 
@@ -205,9 +205,7 @@ export class WindowManager {
         }
       }
 
-      return Array.from(processMap.values()).sort((a, b) => 
-        a.name.localeCompare(b.name)
-      );
+      return Array.from(processMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
       console.error('[WindowManager] Error listing processes:', error);
       return [];

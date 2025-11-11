@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar styling */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-base-200;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded;
+    background-color: rgba(var(--fallback-bc, oklch(var(--bc) / 1)), 0.2);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--fallback-bc, oklch(var(--bc) / 1)), 0.3);
+  }
+}
+
+/* Keyboard key styling */
+.key-badge {
+  @apply inline-flex items-center justify-center px-2 py-1 text-xs font-mono font-semibold
+    rounded border-2 bg-base-100 shadow-sm min-w-[2rem];
+  border-color: rgba(var(--fallback-bc, oklch(var(--bc) / 1)), 0.2);
+}
+
+/* Pulse animation for status indicators */
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

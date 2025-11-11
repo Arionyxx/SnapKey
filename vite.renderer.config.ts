@@ -10,6 +10,9 @@ export default defineConfig({
       '@shared': resolve(__dirname, './src/shared'),
     },
   },
+  css: {
+    postcss: './postcss.config.js',
+  },
   build: {
     rollupOptions: {
       input: {

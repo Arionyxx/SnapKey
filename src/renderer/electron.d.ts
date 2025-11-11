@@ -2,10 +2,15 @@ import {
   Settings,
   PartialSettings,
   HookStatus,
+  HookDiagnostics,
   ActiveProcess,
   ProcessList,
   WindowState,
   TrayStatus,
+  KeybindProfile,
+  PartialKeybindProfile,
+  KeybindCombo,
+  PartialKeybindCombo,
 } from '../shared/ipc';
 
 export {};
@@ -25,7 +30,31 @@ declare global {
       hook: {
         getStatus: () => Promise<HookStatus>;
         toggle: () => Promise<HookStatus>;
+        getDiagnostics: () => Promise<HookDiagnostics>;
         onStatusUpdated: (callback: (status: HookStatus) => void) => () => void;
+      };
+
+      // Profile API
+      profile: {
+        list: () => Promise<KeybindProfile[]>;
+        get: (id: string) => Promise<KeybindProfile>;
+        create: (
+          profile: Omit<KeybindProfile, 'id' | 'createdAt' | 'updatedAt'>
+        ) => Promise<KeybindProfile>;
+        update: (id: string, updates: PartialKeybindProfile) => Promise<KeybindProfile>;
+        delete: (id: string) => Promise<boolean>;
+        setActive: (id: string) => Promise<Settings>;
+      };
+
+      // Keybind API
+      keybind: {
+        create: (profileId: string, keybind: Omit<KeybindCombo, 'id'>) => Promise<KeybindProfile>;
+        update: (
+          profileId: string,
+          keybindId: string,
+          updates: PartialKeybindCombo
+        ) => Promise<KeybindProfile>;
+        delete: (profileId: string, keybindId: string) => Promise<KeybindProfile>;
       };
 
       // Process API
