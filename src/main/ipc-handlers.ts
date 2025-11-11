@@ -6,6 +6,10 @@ import {
   IpcResponse,
   validateChannel,
   partialSettingsSchema,
+  keybindProfileSchema,
+  partialKeybindProfileSchema,
+  keybindComboSchema,
+  partialKeybindComboSchema,
   Settings,
   HookStatus,
   ActiveProcess,
@@ -48,6 +52,111 @@ export class IpcHandlers {
       return this.handleRequest(() => {
         console.log('[IPC] Handling SETTINGS_RESET');
         return this.settingsManager.resetSettings();
+      });
+    });
+
+    // Profile handlers
+    ipcMain.handle(IPC_CHANNELS.PROFILE_LIST, () => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling PROFILE_LIST');
+        return this.settingsManager.listProfiles();
+      });
+    });
+
+    ipcMain.handle(IPC_CHANNELS.PROFILE_GET, (_event, profileId: unknown) => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling PROFILE_GET:', profileId);
+        if (typeof profileId !== 'string') {
+          throw new Error('Invalid profile ID');
+        }
+        const profile = this.settingsManager.getProfile(profileId);
+        if (!profile) {
+          throw new Error(`Profile not found: ${profileId}`);
+        }
+        return profile;
+      });
+    });
+
+    ipcMain.handle(IPC_CHANNELS.PROFILE_CREATE, (_event, profileData: unknown) => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling PROFILE_CREATE with:', profileData);
+        const validated = keybindProfileSchema
+          .omit({ id: true, createdAt: true, updatedAt: true })
+          .parse(profileData);
+        return this.settingsManager.createProfile(validated);
+      });
+    });
+
+    ipcMain.handle(IPC_CHANNELS.PROFILE_UPDATE, (_event, data: unknown) => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling PROFILE_UPDATE with:', data);
+        const { profileId, updates } = data as { profileId: string; updates: unknown };
+        if (typeof profileId !== 'string') {
+          throw new Error('Invalid profile ID');
+        }
+        const validated = partialKeybindProfileSchema.parse(updates);
+        return this.settingsManager.updateProfile(profileId, validated);
+      });
+    });
+
+    ipcMain.handle(IPC_CHANNELS.PROFILE_DELETE, (_event, profileId: unknown) => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling PROFILE_DELETE:', profileId);
+        if (typeof profileId !== 'string') {
+          throw new Error('Invalid profile ID');
+        }
+        this.settingsManager.deleteProfile(profileId);
+        return true;
+      });
+    });
+
+    ipcMain.handle(IPC_CHANNELS.PROFILE_SET_ACTIVE, (_event, profileId: unknown) => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling PROFILE_SET_ACTIVE:', profileId);
+        if (typeof profileId !== 'string') {
+          throw new Error('Invalid profile ID');
+        }
+        return this.settingsManager.setActiveProfile(profileId);
+      });
+    });
+
+    // Keybind handlers
+    ipcMain.handle(IPC_CHANNELS.KEYBIND_CREATE, (_event, data: unknown) => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling KEYBIND_CREATE with:', data);
+        const { profileId, keybind } = data as { profileId: string; keybind: unknown };
+        if (typeof profileId !== 'string') {
+          throw new Error('Invalid profile ID');
+        }
+        const validated = keybindComboSchema.omit({ id: true }).parse(keybind);
+        return this.settingsManager.createKeybind(profileId, validated);
+      });
+    });
+
+    ipcMain.handle(IPC_CHANNELS.KEYBIND_UPDATE, (_event, data: unknown) => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling KEYBIND_UPDATE with:', data);
+        const { profileId, keybindId, updates } = data as {
+          profileId: string;
+          keybindId: string;
+          updates: unknown;
+        };
+        if (typeof profileId !== 'string' || typeof keybindId !== 'string') {
+          throw new Error('Invalid profile ID or keybind ID');
+        }
+        const validated = partialKeybindComboSchema.parse(updates);
+        return this.settingsManager.updateKeybind(profileId, keybindId, validated);
+      });
+    });
+
+    ipcMain.handle(IPC_CHANNELS.KEYBIND_DELETE, (_event, data: unknown) => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling KEYBIND_DELETE with:', data);
+        const { profileId, keybindId } = data as { profileId: string; keybindId: string };
+        if (typeof profileId !== 'string' || typeof keybindId !== 'string') {
+          throw new Error('Invalid profile ID or keybind ID');
+        }
+        return this.settingsManager.deleteKeybind(profileId, keybindId);
       });
     });
 

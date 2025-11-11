@@ -1,77 +1,155 @@
-import { app } from 'electron';
-import fs from 'fs';
-import path from 'path';
-import { Settings, PartialSettings, settingsSchema, DEFAULT_SETTINGS } from '../shared/ipc';
+import {
+  Settings,
+  PartialSettings,
+  KeybindProfile,
+  KeybindCombo,
+  PartialKeybindProfile,
+  PartialKeybindCombo,
+} from '../shared/ipc';
+import { SettingsStore } from './services/settings-store';
 
 export class SettingsManager {
-  private settings: Settings;
-  private settingsPath: string;
+  private store: SettingsStore;
   private listeners: Array<(settings: Settings) => void> = [];
 
   constructor() {
-    this.settingsPath = path.join(app.getPath('userData'), 'settings.json');
-    this.settings = this.loadSettings();
+    this.store = new SettingsStore();
+    console.log('[Settings] Initialized with store at:', this.store.getStorePath());
   }
 
-  private loadSettings(): Settings {
-    try {
-      if (fs.existsSync(this.settingsPath)) {
-        const data = fs.readFileSync(this.settingsPath, 'utf-8');
-        const parsed = JSON.parse(data);
-        const validated = settingsSchema.parse(parsed);
-        console.log('[Settings] Loaded settings from disk:', validated);
-        return validated;
-      }
-    } catch (error) {
-      console.error('[Settings] Error loading settings:', error);
-    }
+  // ===========================
+  // Settings Operations
+  // ===========================
 
-    console.log('[Settings] Using default settings');
-    return { ...DEFAULT_SETTINGS };
+  getSettings(): Settings {
+    return this.store.getSettings();
   }
 
-  private saveSettings(): void {
+  updateSettings(updates: PartialSettings): Settings {
     try {
-      const dir = path.dirname(this.settingsPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-
-      fs.writeFileSync(this.settingsPath, JSON.stringify(this.settings, null, 2), 'utf-8');
-      console.log('[Settings] Saved settings to disk');
+      const updated = this.store.updateSettings(updates);
+      this.notifyListeners();
+      console.log('[Settings] Updated settings');
+      return updated;
     } catch (error) {
-      console.error('[Settings] Error saving settings:', error);
+      console.error('[Settings] Error updating settings:', error);
       throw error;
     }
   }
 
-  getSettings(): Settings {
-    return { ...this.settings };
+  resetSettings(): Settings {
+    const reset = this.store.resetSettings();
+    this.notifyListeners();
+    console.log('[Settings] Reset to defaults');
+    return reset;
   }
 
-  updateSettings(updates: PartialSettings): Settings {
-    this.settings = { ...this.settings, ...updates };
+  // ===========================
+  // Profile Operations
+  // ===========================
 
+  listProfiles(): KeybindProfile[] {
+    return this.store.listProfiles();
+  }
+
+  getProfile(profileId: string): KeybindProfile | null {
+    return this.store.getProfile(profileId);
+  }
+
+  createProfile(profile: Omit<KeybindProfile, 'id' | 'createdAt' | 'updatedAt'>): KeybindProfile {
     try {
-      const validated = settingsSchema.parse(this.settings);
-      this.settings = validated;
-      this.saveSettings();
+      const created = this.store.createProfile(profile);
       this.notifyListeners();
-      console.log('[Settings] Updated settings:', this.settings);
-      return this.getSettings();
+      return created;
     } catch (error) {
-      console.error('[Settings] Validation error:', error);
-      throw new Error('Invalid settings data');
+      console.error('[Settings] Error creating profile:', error);
+      throw error;
     }
   }
 
-  resetSettings(): Settings {
-    this.settings = { ...DEFAULT_SETTINGS };
-    this.saveSettings();
-    this.notifyListeners();
-    console.log('[Settings] Reset to defaults');
-    return this.getSettings();
+  updateProfile(profileId: string, updates: PartialKeybindProfile): KeybindProfile {
+    try {
+      const updated = this.store.updateProfile(profileId, updates);
+      this.notifyListeners();
+      return updated;
+    } catch (error) {
+      console.error('[Settings] Error updating profile:', error);
+      throw error;
+    }
   }
+
+  deleteProfile(profileId: string): void {
+    try {
+      this.store.deleteProfile(profileId);
+      this.notifyListeners();
+    } catch (error) {
+      console.error('[Settings] Error deleting profile:', error);
+      throw error;
+    }
+  }
+
+  setActiveProfile(profileId: string): Settings {
+    try {
+      const updated = this.store.setActiveProfile(profileId);
+      this.notifyListeners();
+      return updated;
+    } catch (error) {
+      console.error('[Settings] Error setting active profile:', error);
+      throw error;
+    }
+  }
+
+  getActiveProfile(): KeybindProfile | null {
+    return this.store.getActiveProfile();
+  }
+
+  // ===========================
+  // Keybind Operations
+  // ===========================
+
+  createKeybind(
+    profileId: string,
+    keybind: Omit<KeybindCombo, 'id'>
+  ): { profile: KeybindProfile; keybind: KeybindCombo } {
+    try {
+      const result = this.store.createKeybind(profileId, keybind);
+      this.notifyListeners();
+      return result;
+    } catch (error) {
+      console.error('[Settings] Error creating keybind:', error);
+      throw error;
+    }
+  }
+
+  updateKeybind(
+    profileId: string,
+    keybindId: string,
+    updates: PartialKeybindCombo
+  ): { profile: KeybindProfile; keybind: KeybindCombo } {
+    try {
+      const result = this.store.updateKeybind(profileId, keybindId, updates);
+      this.notifyListeners();
+      return result;
+    } catch (error) {
+      console.error('[Settings] Error updating keybind:', error);
+      throw error;
+    }
+  }
+
+  deleteKeybind(profileId: string, keybindId: string): KeybindProfile {
+    try {
+      const profile = this.store.deleteKeybind(profileId, keybindId);
+      this.notifyListeners();
+      return profile;
+    } catch (error) {
+      console.error('[Settings] Error deleting keybind:', error);
+      throw error;
+    }
+  }
+
+  // ===========================
+  // Listener Management
+  // ===========================
 
   onChange(listener: (settings: Settings) => void): () => void {
     this.listeners.push(listener);
@@ -81,6 +159,7 @@ export class SettingsManager {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.getSettings()));
+    const settings = this.getSettings();
+    this.listeners.forEach(listener => listener(settings));
   }
 }

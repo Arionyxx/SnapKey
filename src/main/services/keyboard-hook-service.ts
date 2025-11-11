@@ -90,12 +90,12 @@ export class KeyboardHookService {
     console.log('[KeyboardHookService] Starting keyboard hook...');
     try {
       // Register key down handler
-      uIOhook.on('keydown', (event) => {
+      uIOhook.on('keydown', event => {
         this.handleKeyDown(event);
       });
 
       // Register key up handler
-      uIOhook.on('keyup', (event) => {
+      uIOhook.on('keyup', event => {
         this.handleKeyUp(event);
       });
 
@@ -177,7 +177,7 @@ export class KeyboardHookService {
       const conflictingKeys = this.findConflictingKeys(keyName, keyGroup);
       if (conflictingKeys.length > 0) {
         console.log(
-          `[KeyboardHookService] Conflict detected: ${keyName} conflicts with ${conflictingKeys.join(', ')}`,
+          `[KeyboardHookService] Conflict detected: ${keyName} conflicts with ${conflictingKeys.join(', ')}`
         );
         this.diagnostics.conflictsResolved++;
 
@@ -365,7 +365,7 @@ export class KeyboardHookService {
   onStatusChange(listener: (status: HookServiceStatus) => void): () => void {
     this.statusListeners.push(listener);
     return () => {
-      this.statusListeners = this.statusListeners.filter((l) => l !== listener);
+      this.statusListeners = this.statusListeners.filter(l => l !== listener);
     };
   }
 
@@ -375,7 +375,7 @@ export class KeyboardHookService {
       activeKeys: this.getActiveKeys(),
       diagnostics: this.getDiagnostics(),
     };
-    this.statusListeners.forEach((listener) => listener(status));
+    this.statusListeners.forEach(listener => listener(status));
   }
 
   cleanup(): void {

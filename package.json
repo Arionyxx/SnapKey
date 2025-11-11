@@ -60,6 +60,7 @@
     "vite": "^7.2.2"
   },
   "dependencies": {
+    "electron-store": "^11.0.2",
     "koffi": "^2.14.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

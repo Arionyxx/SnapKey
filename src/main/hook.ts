@@ -30,37 +30,89 @@ export class HookManager {
   }
 
   private buildConfig(settings: Settings, enabled: boolean): KeyboardHookConfig {
-    const keyGroups: KeyGroup[] = this.buildKeyGroups(settings.enabledKeys);
+    // Get active profile
+    const activeProfile = settings.profiles.find(p => p.id === settings.activeProfileId);
+    if (!activeProfile) {
+      console.warn('[Hook] Active profile not found, using defaults');
+      return {
+        enabled,
+        keyGroups: [],
+        enabledKeys: [],
+      };
+    }
+
+    // Convert profile keybinds to KeyGroups
+    const keyGroups: KeyGroup[] = this.buildKeyGroupsFromProfile(activeProfile);
+
+    // Extract all enabled keys (unique VK codes)
+    const enabledKeys = this.extractEnabledKeysFromProfile(activeProfile);
 
     return {
       enabled,
       keyGroups,
-      enabledKeys: settings.enabledKeys,
+      enabledKeys,
     };
   }
 
-  private buildKeyGroups(enabledKeys: string[]): KeyGroup[] {
+  private buildKeyGroupsFromProfile(profile: {
+    keybinds: Array<{ groupId: string; keys: number[]; allowSimultaneous: boolean }>;
+  }): KeyGroup[] {
     const groups: KeyGroup[] = [];
 
-    // Create opposing key groups (W-S and A-D)
-    const verticalKeys = enabledKeys.filter((k) => k === 'W' || k === 'S');
-    const horizontalKeys = enabledKeys.filter((k) => k === 'A' || k === 'D');
+    // Group keybinds by groupId
+    const groupMap = new Map<string, { keys: number[]; allowSimultaneous: boolean }>();
 
-    if (verticalKeys.length > 1) {
-      groups.push({
-        keys: verticalKeys,
-        allowSimultaneous: false,
-      });
+    for (const keybind of profile.keybinds) {
+      if (!groupMap.has(keybind.groupId)) {
+        groupMap.set(keybind.groupId, {
+          keys: [],
+          allowSimultaneous: keybind.allowSimultaneous,
+        });
+      }
+
+      const group = groupMap.get(keybind.groupId)!;
+      group.keys.push(...keybind.keys);
     }
 
-    if (horizontalKeys.length > 1) {
-      groups.push({
-        keys: horizontalKeys,
-        allowSimultaneous: false,
-      });
+    // Convert to KeyGroup format
+    for (const [_groupId, groupData] of groupMap) {
+      // Convert VK codes to key names for backwards compatibility with KeyboardHookService
+      const keyNames = groupData.keys.map(vk => this.vkToKeyName(vk));
+      if (keyNames.length > 0) {
+        groups.push({
+          keys: keyNames,
+          allowSimultaneous: groupData.allowSimultaneous,
+        });
+      }
     }
 
     return groups;
+  }
+
+  private extractEnabledKeysFromProfile(profile: {
+    keybinds: Array<{ keys: number[] }>;
+  }): string[] {
+    const vkCodes = new Set<number>();
+
+    for (const keybind of profile.keybinds) {
+      for (const vk of keybind.keys) {
+        vkCodes.add(vk);
+      }
+    }
+
+    // Convert VK codes to key names
+    return Array.from(vkCodes).map(vk => this.vkToKeyName(vk));
+  }
+
+  private vkToKeyName(vk: number): string {
+    // Map VK codes to key names
+    const vkMap: Record<number, string> = {
+      0x57: 'W',
+      0x41: 'A',
+      0x53: 'S',
+      0x44: 'D',
+    };
+    return vkMap[vk] || `VK_${vk.toString(16).toUpperCase()}`;
   }
 
   enable(): HookStatus {
@@ -75,7 +127,7 @@ export class HookManager {
         this.hookService = new KeyboardHookService(config);
 
         // Listen to hook service status changes
-        this.hookService.onStatusChange((serviceStatus) => {
+        this.hookService.onStatusChange(serviceStatus => {
           this.status.activeKeys = serviceStatus.activeKeys;
           this.notifyListeners();
         });

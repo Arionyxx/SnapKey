@@ -52,7 +52,7 @@ function initializeManagers() {
   hookManager.setSettings(settingsManager.getSettings());
 
   // Listen to settings changes and update hook manager
-  settingsManager.onChange((settings) => {
+  settingsManager.onChange(settings => {
     hookManager.setSettings(settings);
   });
 

@@ -70,7 +70,9 @@ function initWin32(): void {
 
     // UINT SendInput(UINT cInputs, LPINPUT pInputs, int cbSize);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    sendInputFunc = (user32 as any).func('uint SendInput(uint cInputs, _Inout_ INPUT *pInputs, int cbSize)');
+    sendInputFunc = (user32 as any).func(
+      'uint SendInput(uint cInputs, _Inout_ INPUT *pInputs, int cbSize)'
+    );
 
     console.log('[Win32Input] Win32 API initialized successfully');
   } catch (error) {
@@ -82,7 +84,7 @@ function initWin32(): void {
 export function sendKeyEvent(vkCode: number, isKeyUp: boolean, tagged = true): boolean {
   if (process.platform !== 'win32') {
     console.log(
-      `[Win32Input] Simulating key event (non-Windows): vkCode=${vkCode}, isKeyUp=${isKeyUp}`,
+      `[Win32Input] Simulating key event (non-Windows): vkCode=${vkCode}, isKeyUp=${isKeyUp}`
     );
     return true;
   }
@@ -116,7 +118,7 @@ export function sendKeyEvent(vkCode: number, isKeyUp: boolean, tagged = true): b
     }
 
     console.log(
-      `[Win32Input] Sent key event: vkCode=${vkCode}, isKeyUp=${isKeyUp}, tagged=${tagged}`,
+      `[Win32Input] Sent key event: vkCode=${vkCode}, isKeyUp=${isKeyUp}, tagged=${tagged}`
     );
     return true;
   } catch (error) {
