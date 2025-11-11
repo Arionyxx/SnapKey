@@ -4,6 +4,7 @@ import {
   HookStatus,
   ActiveProcess,
   ProcessList,
+  WindowState,
   TrayStatus,
 } from '../shared/ipc';
 
@@ -31,6 +32,12 @@ declare global {
       process: {
         list: () => Promise<ProcessList>;
         getActive: () => Promise<ActiveProcess | null>;
+        getFullscreenState: () => Promise<WindowState>;
+      };
+
+      // Window state API
+      windowState: {
+        onUpdated: (callback: (state: WindowState) => void) => () => void;
       };
 
       // Tray API
