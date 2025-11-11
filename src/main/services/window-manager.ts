@@ -29,6 +29,8 @@ export class WindowManager {
   private lastPollTime = 0;
   private readonly POLL_INTERVAL_MS = 500; // Poll every 500ms
   private readonly MIN_POLL_INTERVAL_MS = 100; // Throttle to prevent excessive polling
+  private win32Available = true;
+  private win32ErrorLogged = false;
 
   constructor() {
     this.currentState = {
@@ -94,8 +96,8 @@ export class WindowManager {
       };
     }
 
-    const windowInfo = getForegroundWindowInfo();
-    if (!windowInfo) {
+    // If Win32 API is not available, return empty state and skip polling
+    if (!this.win32Available) {
       return {
         process: null,
         isFullscreen: false,
@@ -103,20 +105,43 @@ export class WindowManager {
       };
     }
 
-    const processInfo: ProcessWithWindow = {
-      pid: windowInfo.processId,
-      name: windowInfo.processName,
-      path: windowInfo.processPath,
-      title: windowInfo.title,
-    };
+    try {
+      const windowInfo = getForegroundWindowInfo();
+      if (!windowInfo) {
+        return {
+          process: null,
+          isFullscreen: false,
+          hwnd: null,
+        };
+      }
 
-    const fullscreen = isWindowFullscreen(windowInfo.hwnd);
+      const processInfo: ProcessWithWindow = {
+        pid: windowInfo.processId,
+        name: windowInfo.processName,
+        path: windowInfo.processPath,
+        title: windowInfo.title,
+      };
 
-    return {
-      process: processInfo,
-      isFullscreen: fullscreen,
-      hwnd: windowInfo.hwnd,
-    };
+      const fullscreen = isWindowFullscreen(windowInfo.hwnd);
+
+      return {
+        process: processInfo,
+        isFullscreen: fullscreen,
+        hwnd: windowInfo.hwnd,
+      };
+    } catch (error) {
+      // Log error only once to avoid spam
+      if (!this.win32ErrorLogged) {
+        console.error('[WindowManager] Win32 API error, disabling window detection:', error);
+        this.win32ErrorLogged = true;
+        this.win32Available = false;
+      }
+      return {
+        process: null,
+        isFullscreen: false,
+        hwnd: null,
+      };
+    }
   }
 
   private hasStateChanged(oldState: ActiveWindowState, newState: ActiveWindowState): boolean {
@@ -187,6 +212,11 @@ export class WindowManager {
       return [];
     }
 
+    // If Win32 API is not available, return empty list
+    if (!this.win32Available) {
+      return [];
+    }
+
     try {
       const windows = enumerateWindows();
 
@@ -207,7 +237,12 @@ export class WindowManager {
 
       return Array.from(processMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
-      console.error('[WindowManager] Error listing processes:', error);
+      // Log error only once
+      if (!this.win32ErrorLogged) {
+        console.error('[WindowManager] Win32 API error, disabling window detection:', error);
+        this.win32ErrorLogged = true;
+        this.win32Available = false;
+      }
       return [];
     }
   }
