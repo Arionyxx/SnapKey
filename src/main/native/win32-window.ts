@@ -54,36 +54,56 @@ let queryFullProcessImageNameWFunc: koffi.KoffiFunction | null = null;
 let monitorFromWindowFunc: koffi.KoffiFunction | null = null;
 let getMonitorInfoWFunc: koffi.KoffiFunction | null = null;
 
+let initialized = false;
+let initializationFailed = false;
+
+// Define koffi types at module level to avoid duplicate definitions
+let RECT: koffi.IKoffiCType | null = null;
+let MONITORINFO: koffi.IKoffiCType | null = null;
+let EnumWindowsProc: koffi.IKoffiCType | null = null;
+
+function defineKoffiTypes(): void {
+  if (RECT && MONITORINFO && EnumWindowsProc) {
+    return; // Types already defined
+  }
+
+  // Define RECT structure
+  RECT = koffi.struct('RECT', {
+    left: 'long',
+    top: 'long',
+    right: 'long',
+    bottom: 'long',
+  });
+
+  // Define MONITORINFO structure
+  MONITORINFO = koffi.struct('MONITORINFO', {
+    cbSize: 'uint',
+    rcMonitor: RECT,
+    rcWork: RECT,
+    dwFlags: 'uint',
+  });
+
+  // Define callback type for EnumWindows
+  EnumWindowsProc = koffi.proto('bool EnumWindowsProc(void *hwnd, isize lParam)');
+}
+
 function initWin32Window(): void {
+  if (initialized || initializationFailed) {
+    return; // Already initialized or failed
+  }
+
   if (process.platform !== 'win32') {
     console.log('[Win32Window] Not on Windows, skipping Win32 API initialization');
+    initializationFailed = true;
     return;
   }
 
   try {
+    // Define koffi types first
+    defineKoffiTypes();
+
     user32 = koffi.load('user32.dll');
     kernel32 = koffi.load('kernel32.dll');
-
-    // Define RECT structure
-    const RECT = koffi.struct('RECT', {
-      left: 'long',
-      top: 'long',
-      right: 'long',
-      bottom: 'long',
-    });
-
-    // Define MONITORINFO structure
-    // @ts-expect-error - Used by koffi for type information
-    const _MONITORINFO = koffi.struct('MONITORINFO', {
-      cbSize: 'uint',
-      rcMonitor: RECT,
-      rcWork: RECT,
-      dwFlags: 'uint',
-    });
-
-    // Define callback type for EnumWindows
-    // @ts-expect-error - Used by koffi for type information
-    const _EnumWindowsProc = koffi.proto('bool EnumWindowsProc(void *hwnd, isize lParam)');
 
     // Load functions
     enumWindowsFunc = user32.func('bool EnumWindows(EnumWindowsProc lpEnumFunc, isize lParam)');
@@ -111,8 +131,10 @@ function initWin32Window(): void {
       'bool QueryFullProcessImageNameW(void *hProcess, uint dwFlags, _Out_ str16 lpExeName, _Inout_ uint *lpdwSize)'
     );
 
+    initialized = true;
     console.log('[Win32Window] Win32 window API initialized successfully');
   } catch (error) {
+    initializationFailed = true;
     console.error('[Win32Window] Failed to initialize Win32 window API:', error);
     console.warn('[Win32Window] Continuing without Win32 window API support');
   }
@@ -401,6 +423,10 @@ export function enumerateWindows(): WindowInfo[] {
 
   const windows: WindowInfo[] = [];
 
+  if (!EnumWindowsProc) {
+    return windows;
+  }
+
   try {
     const callback = koffi.register((hwnd: number) => {
       try {
@@ -417,7 +443,7 @@ export function enumerateWindows(): WindowInfo[] {
         // Ignore errors in individual windows
       }
       return true; // Continue enumeration
-    }, koffi.proto('bool EnumWindowsProc(void *hwnd, isize lParam)'));
+    }, EnumWindowsProc);
 
     enumWindowsFunc(callback, 0);
     koffi.unregister(callback);
