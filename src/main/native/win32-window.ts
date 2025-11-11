@@ -91,15 +91,21 @@ function initWin32Window(): void {
     getWindowThreadProcessIdFunc = user32.func(
       'uint GetWindowThreadProcessId(void *hWnd, _Out_ uint *lpdwProcessId)'
     );
-    getWindowTextWFunc = user32.func('int GetWindowTextW(void *hWnd, _Out_ str16 lpString, int nMaxCount)');
+    getWindowTextWFunc = user32.func(
+      'int GetWindowTextW(void *hWnd, _Out_ str16 lpString, int nMaxCount)'
+    );
     getWindowRectFunc = user32.func('bool GetWindowRect(void *hWnd, _Out_ RECT *lpRect)');
     isWindowVisibleFunc = user32.func('bool IsWindowVisible(void *hWnd)');
     getWindowLongPtrWFunc = user32.func('long_ptr GetWindowLongPtrW(void *hWnd, int nIndex)');
     getWindowFunc = user32.func('void *GetWindow(void *hWnd, uint uCmd)');
     monitorFromWindowFunc = user32.func('void *MonitorFromWindow(void *hwnd, uint dwFlags)');
-    getMonitorInfoWFunc = user32.func('bool GetMonitorInfoW(void *hMonitor, _Out_ MONITORINFO *lpmi)');
+    getMonitorInfoWFunc = user32.func(
+      'bool GetMonitorInfoW(void *hMonitor, _Out_ MONITORINFO *lpmi)'
+    );
 
-    openProcessFunc = kernel32.func('void *OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId)');
+    openProcessFunc = kernel32.func(
+      'void *OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId)'
+    );
     closeHandleFunc = kernel32.func('bool CloseHandle(void *hObject)');
     queryFullProcessImageNameWFunc = kernel32.func(
       'bool QueryFullProcessImageNameW(void *hProcess, uint dwFlags, _Out_ str16 lpExeName, _Inout_ uint *lpdwSize)'
@@ -192,7 +198,7 @@ function getProcessInfo(processId: number): { processName: string; processPath: 
     const pathBuffer = global.Buffer.alloc(MAX_PATH * 2);
     const sizeArray = [MAX_PATH];
     const success = queryFullProcessImageNameWFunc(hProcess, 0, pathBuffer, sizeArray);
-    
+
     closeHandleFunc(hProcess);
 
     if (success) {
@@ -246,7 +252,7 @@ export function getWindowBounds(hwnd: number): WindowBounds | null {
   try {
     const rect = { left: 0, top: 0, right: 0, bottom: 0 };
     const success = getWindowRectFunc(hwnd, [rect]);
-    
+
     if (!success) {
       return null;
     }
@@ -292,7 +298,7 @@ export function getMonitorInfo(hwnd: number): MonitorInfo | null {
     };
 
     const success = getMonitorInfoWFunc(hMonitor, [monitorInfo]);
-    
+
     if (!success) {
       return null;
     }

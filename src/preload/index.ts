@@ -10,6 +10,11 @@ import {
   ProcessList,
   WindowState,
   TrayStatus,
+  KeybindProfile,
+  PartialKeybindProfile,
+  KeybindCombo,
+  PartialKeybindCombo,
+  HookDiagnostics,
 } from '../shared/ipc';
 
 // Helper function to invoke IPC and handle response
@@ -54,8 +59,31 @@ const api = {
   hook: {
     getStatus: () => invoke<HookStatus>(IPC_CHANNELS.HOOK_STATUS_GET),
     toggle: () => invoke<HookStatus>(IPC_CHANNELS.HOOK_TOGGLE),
+    getDiagnostics: () => invoke<HookDiagnostics>(IPC_CHANNELS.HOOK_DIAGNOSTICS_GET),
     onStatusUpdated: (callback: (status: HookStatus) => void) =>
       subscribe<HookStatus>(IPC_CHANNELS.HOOK_STATUS_UPDATED, callback),
+  },
+
+  // Profile API
+  profile: {
+    list: () => invoke<KeybindProfile[]>(IPC_CHANNELS.PROFILE_LIST),
+    get: (id: string) => invoke<KeybindProfile>(IPC_CHANNELS.PROFILE_GET, { id }),
+    create: (profile: Omit<KeybindProfile, 'id' | 'createdAt' | 'updatedAt'>) =>
+      invoke<KeybindProfile>(IPC_CHANNELS.PROFILE_CREATE, profile),
+    update: (id: string, updates: PartialKeybindProfile) =>
+      invoke<KeybindProfile>(IPC_CHANNELS.PROFILE_UPDATE, { id, updates }),
+    delete: (id: string) => invoke<boolean>(IPC_CHANNELS.PROFILE_DELETE, { id }),
+    setActive: (id: string) => invoke<Settings>(IPC_CHANNELS.PROFILE_SET_ACTIVE, { id }),
+  },
+
+  // Keybind API
+  keybind: {
+    create: (profileId: string, keybind: Omit<KeybindCombo, 'id'>) =>
+      invoke<KeybindProfile>(IPC_CHANNELS.KEYBIND_CREATE, { profileId, keybind }),
+    update: (profileId: string, keybindId: string, updates: PartialKeybindCombo) =>
+      invoke<KeybindProfile>(IPC_CHANNELS.KEYBIND_UPDATE, { profileId, keybindId, updates }),
+    delete: (profileId: string, keybindId: string) =>
+      invoke<KeybindProfile>(IPC_CHANNELS.KEYBIND_DELETE, { profileId, keybindId }),
   },
 
   // Process API
