@@ -70,10 +70,19 @@ npm run package
 Create installers for your platform:
 
 ```bash
+# All installers for current platform
 npm run make
+
+# Windows-specific installers
+npm run make:win         # All Windows installers
+npm run make:squirrel    # Squirrel.Windows installer (auto-updating)
+npm run make:wix         # WiX MSI installer (enterprise)
+npm run make:zip         # Portable ZIP
 ```
 
-This will create platform-specific installers in the `out/` directory.
+This will create platform-specific installers in the `out/make/` directory.
+
+**📦 For comprehensive build instructions, native module troubleshooting, and code signing, see [BUILD.md](./BUILD.md).**
 
 ### Code Quality
 

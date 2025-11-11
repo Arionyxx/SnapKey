@@ -1,9 +1,14 @@
 [![testsnap](https://github.com/user-attachments/assets/e9a23ba9-d394-4711-abfc-994932605d86)](https://github.com/cafali/SnapKey/releases)
 
-> **🚀 SnapKey 2.0 Development**  
-> We're rebuilding SnapKey with Electron, TypeScript, and React for a modern, maintainable codebase!  
-> See [README.electron.md](./README.electron.md) for development information.  
-> The legacy C++ implementation is now in the [`legacy/`](./legacy/) folder.
+> **🚀 SnapKey 2.0 - Electron Edition**  
+> SnapKey has been completely rebuilt with Electron, TypeScript, and React for a modern, cross-platform experience!  
+> 
+> **For Developers:**
+> - 📖 [Development Guide](./README.electron.md) - Getting started with development
+> - 🏗️ [Build Guide](./BUILD.md) - Comprehensive build and packaging instructions
+> - 🔧 [Troubleshooting](#troubleshooting) - Common issues and solutions
+> 
+> The legacy C++ implementation is archived in the [`legacy/`](./legacy/) folder.
 
 **About SnapKey** 
 --------------------------------------------------------------------------------------------------
@@ -118,6 +123,120 @@ Looking for More Information? Got Questions or Need Help?
 
 - **[Changelog 🔄](https://github.com/cafali/SnapKey/wiki/Updates)**  
   View SnapKey releases and changes
+
+**Quick Start (For Developers)**
+--------------------------------------------------------------------------------------------------
+
+### Prerequisites
+
+- **Node.js** 20.x or higher
+- **npm** 11.x or higher
+- **Windows SDK** (for native module compilation)
+- **Visual Studio Build Tools** 2019+ with C++ workload
+
+See [BUILD.md](./BUILD.md) for detailed prerequisite installation instructions.
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/cafali/SnapKey.git
+cd SnapKey
+
+# Install dependencies and rebuild native modules
+npm install
+
+# Start development server
+npm run start
+```
+
+### Building for Production
+
+```bash
+# Create all installers for current platform
+npm run make
+
+# Windows-specific options
+npm run make:squirrel  # Auto-updating installer (recommended)
+npm run make:wix       # MSI installer (enterprise)
+npm run make:zip       # Portable ZIP
+
+# Package without installer
+npm run package
+```
+
+**Output:** Installers are created in `out/make/` directory.
+
+For comprehensive build instructions, code signing, and troubleshooting, see **[BUILD.md](./BUILD.md)**.
+
+Troubleshooting
+--------------------------------------------------------------------------------------------------
+
+### Native Module Errors During Installation
+
+**Problem:** `uiohook-napi` or `koffi` fails to compile during `npm install`
+
+**Solutions:**
+1. Install **Visual Studio Build Tools** with "Desktop development with C++" workload
+2. Install **Windows SDK** 10 or later
+3. Install **Python** 3.8+ and add to PATH
+4. Rebuild native modules: `npm run postinstall`
+
+### Application Won't Start
+
+**Problem:** SnapKey fails to launch or crashes immediately
+
+**Solutions:**
+1. Ensure all prerequisites are installed (see above)
+2. Check console for error messages: `npm run start`
+3. Verify native modules are compiled: `npm run postinstall`
+4. Try clean reinstall:
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+### Keyboard Hook Not Working
+
+**Problem:** SnapKey starts but key presses aren't intercepted
+
+**Solutions:**
+1. Run SnapKey as **Administrator** (required for global keyboard hooks)
+2. Check if another keyboard utility is conflicting
+3. Verify hook is enabled in the settings
+4. Check that target process/fullscreen conditions are met (if configured)
+5. Review diagnostics panel for errors
+
+### System Tray Icon Not Appearing
+
+**Problem:** Tray icon missing after startup
+
+**Solutions:**
+1. Enable "Show all icons" in Windows taskbar settings
+2. Check if `minimizeToTray` is enabled in settings
+3. Restart the application
+4. Check resource files are present in `legacy/` folder
+
+### Build Errors (WiX/MSI)
+
+**Problem:** MSI creation fails during `npm run make:wix`
+
+**Solutions:**
+1. WiX Toolset will be downloaded automatically by `electron-wix-msi`
+2. Ensure .NET Framework 3.5+ is installed on Windows
+3. Try Squirrel installer instead: `npm run make:squirrel`
+
+### "Unknown Publisher" Warning
+
+**Problem:** Windows SmartScreen warns about unknown publisher
+
+**Solutions:**
+1. This is normal for unsigned builds
+2. Click "More info" → "Run anyway"
+3. For production releases, use **code signing certificate** (see [BUILD.md](./BUILD.md#code-signing))
+
+For more troubleshooting help, visit the [SnapKey Wiki](https://github.com/cafali/SnapKey/wiki/Troubleshoot) or [open an issue](https://github.com/cafali/SnapKey/issues).
+
 ----
 
 <p align="center">

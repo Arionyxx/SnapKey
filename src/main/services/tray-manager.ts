@@ -14,10 +14,14 @@ export class TrayManager {
   private currentHookStatus: HookStatus = { enabled: false, activeKeys: [], lastError: null };
 
   constructor() {
-    // Icon paths relative to the built main process
-    this.iconPath = path.join(__dirname, '../../legacy/icon.ico');
-    this.iconOffPath = path.join(__dirname, '../../legacy/icon_off.ico');
-    console.log('[TrayManager] Icon paths configured');
+    // Icon paths - use resources path in production, legacy folder in dev
+    const basePath = app.isPackaged
+      ? process.resourcesPath
+      : path.join(__dirname, '../../legacy');
+    
+    this.iconPath = path.join(basePath, 'icon.ico');
+    this.iconOffPath = path.join(basePath, 'icon_off.ico');
+    console.log('[TrayManager] Icon paths configured:', { iconPath: this.iconPath, iconOffPath: this.iconOffPath });
   }
 
   initialize(

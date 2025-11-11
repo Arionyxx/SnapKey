@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
+import AutoLaunch from 'auto-launch';
 import { SettingsManager } from './settings';
 import { HookManager } from './hook';
 import { IpcHandlers } from './ipc-handlers';
@@ -17,8 +18,19 @@ let ipcHandlers: IpcHandlers;
 let trayManager: TrayManager;
 let isQuitting = false;
 
+// Auto-launch configuration
+const autoLauncher = new AutoLaunch({
+  name: 'SnapKey',
+  path: app.getPath('exe'),
+});
+
 function createWindow() {
   console.log('[Main] Creating main window...');
+
+  // Use resources path in production, legacy folder in dev
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'icon.ico')
+    : path.join(__dirname, '../../legacy/icon.ico');
 
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -30,14 +42,21 @@ function createWindow() {
       sandbox: false,
     },
     title: 'SnapKey',
-    icon: path.join(__dirname, '../../legacy/icon.ico'),
+    icon: iconPath,
   });
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+    // Open DevTools only in development
     mainWindow.webContents.openDevTools();
   } else {
+    // Production mode
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+    
+    // Disable DevTools in production for security
+    mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow?.webContents.closeDevTools();
+    });
   }
 
   // Handle close event for minimize to tray
@@ -80,6 +99,8 @@ function initializeManagers() {
     if (mainWindow && trayManager) {
       trayManager.updateHookStatus(hookManager.getStatus());
     }
+    // Handle auto-launch setting
+    handleAutoLaunchSetting(settings.startOnBoot);
   });
 
   // Listen to hook status changes and update tray icon
@@ -175,6 +196,22 @@ function cleanup() {
   }
 }
 
+async function handleAutoLaunchSetting(enabled: boolean) {
+  try {
+    const isEnabled = await autoLauncher.isEnabled();
+    
+    if (enabled && !isEnabled) {
+      await autoLauncher.enable();
+      console.log('[Main] Auto-launch enabled');
+    } else if (!enabled && isEnabled) {
+      await autoLauncher.disable();
+      console.log('[Main] Auto-launch disabled');
+    }
+  } catch (error) {
+    console.error('[Main] Error handling auto-launch setting:', error);
+  }
+}
+
 // Main entry point
 async function main() {
   console.log('[Main] SnapKey starting...');
@@ -205,6 +242,10 @@ async function main() {
     trayManager.initialize(mainWindow, settingsManager, hookManager);
     trayManager.updateHookStatus(hookManager.getStatus());
   }
+
+  // Initialize auto-launch setting
+  const settings = settingsManager.getSettings();
+  await handleAutoLaunchSetting(settings.startOnBoot);
 
   console.log('[Main] SnapKey started successfully');
 }
