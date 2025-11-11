@@ -58,7 +58,7 @@ function initWin32(): void {
       wScan: 'ushort',
       dwFlags: 'uint',
       time: 'uint',
-      dwExtraInfo: 'ulong_ptr',
+      dwExtraInfo: 'usize',
     });
 
     // Define INPUT union (simplified for keyboard-only)
@@ -77,7 +77,7 @@ function initWin32(): void {
     console.log('[Win32Input] Win32 API initialized successfully');
   } catch (error) {
     console.error('[Win32Input] Failed to initialize Win32 API:', error);
-    throw error;
+    console.warn('[Win32Input] Continuing without Win32 API support');
   }
 }
 

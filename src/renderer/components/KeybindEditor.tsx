@@ -241,9 +241,7 @@ export function KeybindEditor({ profile }: KeybindEditorProps) {
         <div className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-lg">Press Keys</h3>
-            <p className="py-4">
-              Press the keys you want to bind. Press ESC to cancel.
-            </p>
+            <p className="py-4">Press the keys you want to bind. Press ESC to cancel.</p>
 
             <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-base-200 rounded-lg">
               {keyCaptureState.keys.length > 0 ? (

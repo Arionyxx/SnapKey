@@ -59,7 +59,7 @@ export function ProfilePanel() {
     } catch (err) {
       console.error('Error setting active profile:', err);
       alert(
-        `Error setting active profile: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        `Error setting active profile: ${err instanceof Error ? err.message : 'Unknown error'}`
       );
     }
   };

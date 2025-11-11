@@ -1,11 +1,17 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import AutoLaunch from 'auto-launch';
 import { SettingsManager } from './settings';
 import { HookManager } from './hook';
 import { IpcHandlers } from './ipc-handlers';
 import { WindowManager } from './services/window-manager';
 import { TrayManager } from './services/tray-manager';
+
+// ESM compatibility shim for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -52,7 +58,7 @@ function createWindow() {
   } else {
     // Production mode
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
-    
+
     // Disable DevTools in production for security
     mainWindow.webContents.on('devtools-opened', () => {
       mainWindow?.webContents.closeDevTools();
@@ -199,7 +205,7 @@ function cleanup() {
 async function handleAutoLaunchSetting(enabled: boolean) {
   try {
     const isEnabled = await autoLauncher.isEnabled();
-    
+
     if (enabled && !isEnabled) {
       await autoLauncher.enable();
       console.log('[Main] Auto-launch enabled');
