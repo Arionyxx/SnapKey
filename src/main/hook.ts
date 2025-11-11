@@ -4,15 +4,27 @@ import {
   KeyboardHookConfig,
   KeyGroup,
 } from './services/keyboard-hook-service';
+import { WindowManager } from './services/window-manager';
 
 export class HookManager {
   private status: HookStatus;
   private listeners: Array<(status: HookStatus) => void> = [];
   private hookService: KeyboardHookService | null = null;
   private currentSettings: Settings | null = null;
+  private windowManager: WindowManager | null = null;
+  private userEnabled = false; // Track if user wants hook enabled
 
   constructor() {
     this.status = { ...DEFAULT_HOOK_STATUS };
+  }
+
+  setWindowManager(windowManager: WindowManager): void {
+    this.windowManager = windowManager;
+
+    // Listen to window state changes
+    this.windowManager.onChange(() => {
+      this.updateHookState();
+    });
   }
 
   getStatus(): HookStatus {
@@ -27,6 +39,9 @@ export class HookManager {
       const config = this.buildConfig(settings, this.status.enabled);
       this.hookService.updateConfig(config);
     }
+
+    // Update hook state based on new settings
+    this.updateHookState();
   }
 
   private buildConfig(settings: Settings, enabled: boolean): KeyboardHookConfig {
@@ -115,8 +130,64 @@ export class HookManager {
     return vkMap[vk] || `VK_${vk.toString(16).toUpperCase()}`;
   }
 
+  private shouldEnableHook(): boolean {
+    if (!this.userEnabled) {
+      return false;
+    }
+
+    if (!this.currentSettings) {
+      return false;
+    }
+
+    // Check window conditions if window manager is available
+    if (this.windowManager) {
+      const conditionsMet = this.windowManager.checkConditions({
+        targetProcess: this.currentSettings.targetProcess,
+        fullscreenOnly: this.currentSettings.fullscreenOnly,
+      });
+
+      if (!conditionsMet) {
+        console.log('[Hook] Window conditions not met, hook should be disabled');
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private updateHookState(): void {
+    const shouldEnable = this.shouldEnableHook();
+    const isEnabled = this.status.enabled;
+
+    if (shouldEnable && !isEnabled) {
+      console.log('[Hook] Conditions met, enabling hook automatically');
+      this.enableHookService();
+    } else if (!shouldEnable && isEnabled) {
+      console.log('[Hook] Conditions not met, disabling hook automatically');
+      this.disableHookService();
+    }
+  }
+
   enable(): HookStatus {
-    console.log('[Hook] Enabling keyboard hook...');
+    console.log('[Hook] User enabling keyboard hook...');
+    this.userEnabled = true;
+
+    if (!this.shouldEnableHook()) {
+      console.log('[Hook] Conditions not met, hook will enable when conditions are satisfied');
+      this.status = {
+        enabled: false,
+        activeKeys: [],
+        lastError: 'Waiting for window conditions to be met',
+      };
+      this.notifyListeners();
+      return this.getStatus();
+    }
+
+    return this.enableHookService();
+  }
+
+  private enableHookService(): HookStatus {
+    console.log('[Hook] Enabling keyboard hook service...');
     try {
       if (!this.currentSettings) {
         throw new Error('Settings not initialized');
@@ -157,7 +228,13 @@ export class HookManager {
   }
 
   disable(): HookStatus {
-    console.log('[Hook] Disabling keyboard hook...');
+    console.log('[Hook] User disabling keyboard hook...');
+    this.userEnabled = false;
+    return this.disableHookService();
+  }
+
+  private disableHookService(): HookStatus {
+    console.log('[Hook] Disabling keyboard hook service...');
     try {
       if (this.hookService) {
         this.hookService.stop();

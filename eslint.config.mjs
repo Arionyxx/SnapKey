@@ -39,6 +39,12 @@ export default [
         __dirname: 'readonly',
         module: 'readonly',
         require: 'readonly',
+        global: 'readonly',
+        Buffer: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
       },
     },
     plugins: {

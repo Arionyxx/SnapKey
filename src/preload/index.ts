@@ -8,6 +8,7 @@ import {
   HookStatus,
   ActiveProcess,
   ProcessList,
+  WindowState,
   TrayStatus,
 } from '../shared/ipc';
 
@@ -61,6 +62,13 @@ const api = {
   process: {
     list: () => invoke<ProcessList>(IPC_CHANNELS.PROCESS_LIST),
     getActive: () => invoke<ActiveProcess | null>(IPC_CHANNELS.PROCESS_ACTIVE),
+    getFullscreenState: () => invoke<WindowState>(IPC_CHANNELS.PROCESS_FULLSCREEN_STATE),
+  },
+
+  // Window state API
+  windowState: {
+    onUpdated: (callback: (state: WindowState) => void) =>
+      subscribe<WindowState>(IPC_CHANNELS.WINDOW_STATE_UPDATED, callback),
   },
 
   // Tray API

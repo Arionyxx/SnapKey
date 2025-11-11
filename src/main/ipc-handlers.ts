@@ -1,6 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { SettingsManager } from './settings';
 import { HookManager } from './hook';
+import { WindowManager } from './services/window-manager';
 import {
   IPC_CHANNELS,
   IpcResponse,
@@ -12,18 +13,20 @@ import {
   partialKeybindComboSchema,
   Settings,
   HookStatus,
-  ActiveProcess,
   ProcessList,
+  WindowState,
   TrayStatus,
 } from '../shared/ipc';
 
 export class IpcHandlers {
   private settingsManager: SettingsManager;
   private hookManager: HookManager;
+  private windowManager: WindowManager;
 
-  constructor(settingsManager: SettingsManager, hookManager: HookManager) {
+  constructor(settingsManager: SettingsManager, hookManager: HookManager, windowManager: WindowManager) {
     this.settingsManager = settingsManager;
     this.hookManager = hookManager;
+    this.windowManager = windowManager;
     this.registerHandlers();
     this.registerListeners();
   }
@@ -186,18 +189,41 @@ export class IpcHandlers {
     ipcMain.handle(IPC_CHANNELS.PROCESS_LIST, () => {
       return this.handleRequest(() => {
         console.log('[IPC] Handling PROCESS_LIST');
-        // TODO: Implement actual process listing
-        const processes: ProcessList = [];
-        return processes;
+        const processes = this.windowManager.listProcessesWithWindows();
+        const processList: ProcessList = processes.map(p => ({
+          pid: p.pid,
+          name: p.name,
+          path: p.path,
+          title: p.title,
+        }));
+        return processList;
       });
     });
 
     ipcMain.handle(IPC_CHANNELS.PROCESS_ACTIVE, () => {
       return this.handleRequest(() => {
         console.log('[IPC] Handling PROCESS_ACTIVE');
-        // TODO: Implement actual active process detection
-        const activeProcess: ActiveProcess | null = null;
+        const activeProcess = this.windowManager.getActiveProcess();
         return activeProcess;
+      });
+    });
+
+    ipcMain.handle(IPC_CHANNELS.PROCESS_FULLSCREEN_STATE, () => {
+      return this.handleRequest(() => {
+        console.log('[IPC] Handling PROCESS_FULLSCREEN_STATE');
+        const state = this.windowManager.getCurrentState();
+        const settings = this.settingsManager.getSettings();
+        const conditionsMet = this.windowManager.checkConditions({
+          targetProcess: settings.targetProcess,
+          fullscreenOnly: settings.fullscreenOnly,
+        });
+        
+        const windowState: WindowState = {
+          process: state.process,
+          isFullscreen: state.isFullscreen,
+          conditionsMet,
+        };
+        return windowState;
       });
     });
 
@@ -266,6 +292,24 @@ export class IpcHandlers {
     this.hookManager.onChange((status: HookStatus) => {
       console.log('[IPC] Hook status changed, broadcasting to all windows');
       this.broadcastToAll(IPC_CHANNELS.HOOK_STATUS_UPDATED, status);
+    });
+
+    // Listen to window state changes and broadcast to all windows
+    this.windowManager.onChange((state) => {
+      const settings = this.settingsManager.getSettings();
+      const conditionsMet = this.windowManager.checkConditions({
+        targetProcess: settings.targetProcess,
+        fullscreenOnly: settings.fullscreenOnly,
+      });
+
+      const windowState: WindowState = {
+        process: state.process,
+        isFullscreen: state.isFullscreen,
+        conditionsMet,
+      };
+
+      console.log('[IPC] Window state changed, broadcasting to all windows');
+      this.broadcastToAll(IPC_CHANNELS.WINDOW_STATE_UPDATED, windowState);
     });
   }
 

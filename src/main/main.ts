@@ -3,6 +3,7 @@ import path from 'path';
 import { SettingsManager } from './settings';
 import { HookManager } from './hook';
 import { IpcHandlers } from './ipc-handlers';
+import { WindowManager } from './services/window-manager';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -10,6 +11,7 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 let mainWindow: BrowserWindow | null = null;
 let settingsManager: SettingsManager;
 let hookManager: HookManager;
+let windowManager: WindowManager;
 let ipcHandlers: IpcHandlers;
 
 function createWindow() {
@@ -47,16 +49,23 @@ function initializeManagers() {
   console.log('[Main] Initializing managers...');
   settingsManager = new SettingsManager();
   hookManager = new HookManager();
+  windowManager = new WindowManager();
 
   // Initialize hook manager with current settings
   hookManager.setSettings(settingsManager.getSettings());
+
+  // Connect window manager to hook manager
+  hookManager.setWindowManager(windowManager);
 
   // Listen to settings changes and update hook manager
   settingsManager.onChange(settings => {
     hookManager.setSettings(settings);
   });
 
-  ipcHandlers = new IpcHandlers(settingsManager, hookManager);
+  // Start window monitoring
+  windowManager.start();
+
+  ipcHandlers = new IpcHandlers(settingsManager, hookManager, windowManager);
   console.log('[Main] All managers initialized successfully');
 }
 
@@ -110,6 +119,9 @@ function setupAppHandlers() {
 
 function cleanup() {
   try {
+    if (windowManager) {
+      windowManager.cleanup();
+    }
     if (hookManager) {
       hookManager.cleanup();
     }

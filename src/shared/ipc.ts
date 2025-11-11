@@ -33,6 +33,8 @@ export const IPC_CHANNELS = {
   // Process Queries
   PROCESS_LIST: 'process:list',
   PROCESS_ACTIVE: 'process:active',
+  PROCESS_FULLSCREEN_STATE: 'process:fullscreen-state',
+  WINDOW_STATE_UPDATED: 'window:state:updated',
 
   // Tray
   TRAY_TOGGLE: 'tray:toggle',
@@ -111,8 +113,7 @@ export const processInfoSchema = z.object({
   pid: z.number(),
   name: z.string(),
   path: z.string(),
-  cpu: z.number().optional(),
-  memory: z.number().optional(),
+  title: z.string(),
 });
 
 export const processListSchema = z.array(processInfoSchema);
@@ -121,7 +122,15 @@ export const processListSchema = z.array(processInfoSchema);
 export const activeProcessSchema = z.object({
   pid: z.number(),
   name: z.string(),
+  path: z.string(),
   title: z.string(),
+}).nullable();
+
+// Window State Schema
+export const windowStateSchema = z.object({
+  process: activeProcessSchema,
+  isFullscreen: z.boolean(),
+  conditionsMet: z.boolean(),
 });
 
 // Tray Status Schema
@@ -144,6 +153,7 @@ export type HookDiagnostics = z.infer<typeof hookDiagnosticsSchema>;
 export type ProcessInfo = z.infer<typeof processInfoSchema>;
 export type ProcessList = z.infer<typeof processListSchema>;
 export type ActiveProcess = z.infer<typeof activeProcessSchema>;
+export type WindowState = z.infer<typeof windowStateSchema>;
 export type TrayStatus = z.infer<typeof trayStatusSchema>;
 
 // ===========================
