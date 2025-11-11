@@ -56,6 +56,7 @@ let getMonitorInfoWFunc: koffi.KoffiFunction | null = null;
 
 let initialized = false;
 let initializationFailed = false;
+let typesDefinitionAttempted = false;
 
 // Define koffi types at module level to avoid duplicate definitions
 let RECT: koffi.IKoffiCType | null = null;
@@ -63,28 +64,56 @@ let MONITORINFO: koffi.IKoffiCType | null = null;
 let EnumWindowsProc: koffi.IKoffiCType | null = null;
 
 function defineKoffiTypes(): void {
+  // If types are already defined, return immediately
   if (RECT && MONITORINFO && EnumWindowsProc) {
-    return; // Types already defined
+    return;
   }
 
-  // Define RECT structure
-  RECT = koffi.struct('RECT', {
-    left: 'long',
-    top: 'long',
-    right: 'long',
-    bottom: 'long',
-  });
+  // If we've already attempted to define types (even if it failed), don't retry
+  if (typesDefinitionAttempted) {
+    return;
+  }
 
-  // Define MONITORINFO structure
-  MONITORINFO = koffi.struct('MONITORINFO', {
-    cbSize: 'uint',
-    rcMonitor: RECT,
-    rcWork: RECT,
-    dwFlags: 'uint',
-  });
+  typesDefinitionAttempted = true;
 
-  // Define callback type for EnumWindows
-  EnumWindowsProc = koffi.proto('bool EnumWindowsProc(void *hwnd, isize lParam)');
+  try {
+    // Define RECT structure
+    // Wrap in try-catch in case koffi already has it registered internally
+    try {
+      RECT = koffi.struct('RECT', {
+        left: 'long',
+        top: 'long',
+        right: 'long',
+        bottom: 'long',
+      });
+    } catch (error) {
+      // If RECT is already defined in koffi, try to reuse it
+      // This shouldn't happen, but handle it gracefully
+      const errorMsg = String(error);
+      if (errorMsg.includes('Duplicate') || errorMsg.includes('already')) {
+        console.warn('[Win32Window] RECT type already defined in koffi, skipping');
+        // Can't retrieve the existing type, so we'll work without it
+        throw new Error('Cannot proceed without RECT type');
+      }
+      throw error;
+    }
+
+    // Define MONITORINFO structure
+    MONITORINFO = koffi.struct('MONITORINFO', {
+      cbSize: 'uint',
+      rcMonitor: RECT,
+      rcWork: RECT,
+      dwFlags: 'uint',
+    });
+
+    // Define callback type for EnumWindows
+    EnumWindowsProc = koffi.proto('bool EnumWindowsProc(void *hwnd, isize lParam)');
+
+    console.log('[Win32Window] Koffi types defined successfully');
+  } catch (error) {
+    console.error('[Win32Window] Failed to define koffi types:', error);
+    throw error;
+  }
 }
 
 function initWin32Window(): void {
