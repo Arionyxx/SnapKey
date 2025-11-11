@@ -117,13 +117,14 @@ export function KeybindEditor({ profile }: KeybindEditorProps) {
     }
   };
 
-  const _handleUpdateGroupId = async (keybindId: string, groupId: string) => {
-    try {
-      await window.api.keybind.update(profile.id, keybindId, { groupId });
-    } catch (err) {
-      console.error('Error updating keybind:', err);
-    }
-  };
+  // Future feature: Update group ID for a keybind
+  // const handleUpdateGroupId = async (keybindId: string, groupId: string) => {
+  //   try {
+  //     await window.api.keybind.update(profile.id, keybindId, { groupId });
+  //   } catch (err) {
+  //     console.error('Error updating keybind:', err);
+  //   }
+  // };
 
   // Group keybinds by groupId
   const groupedKeybinds = profile.keybinds.reduce(
