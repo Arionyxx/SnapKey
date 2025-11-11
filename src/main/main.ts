@@ -4,6 +4,7 @@ import { SettingsManager } from './settings';
 import { HookManager } from './hook';
 import { IpcHandlers } from './ipc-handlers';
 import { WindowManager } from './services/window-manager';
+import { TrayManager } from './services/tray-manager';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -13,6 +14,8 @@ let settingsManager: SettingsManager;
 let hookManager: HookManager;
 let windowManager: WindowManager;
 let ipcHandlers: IpcHandlers;
+let trayManager: TrayManager;
+let isQuitting = false;
 
 function createWindow() {
   console.log('[Main] Creating main window...');
@@ -37,6 +40,18 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
+  // Handle close event for minimize to tray
+  mainWindow.on('close', event => {
+    if (!isQuitting && settingsManager) {
+      const settings = settingsManager.getSettings();
+      if (settings.minimizeToTray) {
+        console.log('[Main] Minimizing to tray instead of closing');
+        event.preventDefault();
+        mainWindow?.hide();
+      }
+    }
+  });
+
   mainWindow.on('closed', () => {
     console.log('[Main] Main window closed');
     mainWindow = null;
@@ -50,6 +65,7 @@ function initializeManagers() {
   settingsManager = new SettingsManager();
   hookManager = new HookManager();
   windowManager = new WindowManager();
+  trayManager = new TrayManager();
 
   // Initialize hook manager with current settings
   hookManager.setSettings(settingsManager.getSettings());
@@ -60,6 +76,17 @@ function initializeManagers() {
   // Listen to settings changes and update hook manager
   settingsManager.onChange(settings => {
     hookManager.setSettings(settings);
+    // Update tray menu when settings change (profiles might have changed)
+    if (mainWindow && trayManager) {
+      trayManager.updateHookStatus(hookManager.getStatus());
+    }
+  });
+
+  // Listen to hook status changes and update tray icon
+  hookManager.onChange(status => {
+    if (trayManager) {
+      trayManager.updateHookStatus(status);
+    }
   });
 
   // Start window monitoring
@@ -81,6 +108,9 @@ function handleSingleInstanceLock() {
   app.on('second-instance', () => {
     console.log('[Main] Second instance detected. Focusing main window...');
     if (mainWindow) {
+      if (!mainWindow.isVisible()) {
+        mainWindow.show();
+      }
       if (mainWindow.isMinimized()) {
         mainWindow.restore();
       }
@@ -97,18 +127,26 @@ function setupAppHandlers() {
     console.log('[Main] App activated');
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
+    } else if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
     }
   });
 
   app.on('window-all-closed', () => {
     console.log('[Main] All windows closed');
+    // On macOS, keep app running in dock
+    // On Windows/Linux, check minimizeToTray setting
     if (process.platform !== 'darwin') {
-      app.quit();
+      const settings = settingsManager?.getSettings();
+      if (!settings?.minimizeToTray) {
+        app.quit();
+      }
     }
   });
 
   app.on('before-quit', () => {
     console.log('[Main] App is quitting. Cleaning up...');
+    isQuitting = true;
     cleanup();
   });
 
@@ -119,6 +157,9 @@ function setupAppHandlers() {
 
 function cleanup() {
   try {
+    if (trayManager) {
+      trayManager.cleanup();
+    }
     if (windowManager) {
       windowManager.cleanup();
     }
@@ -158,6 +199,12 @@ async function main() {
 
   // Create main window
   createWindow();
+
+  // Initialize tray after window is created
+  if (mainWindow) {
+    trayManager.initialize(mainWindow, settingsManager, hookManager);
+    trayManager.updateHookStatus(hookManager.getStatus());
+  }
 
   console.log('[Main] SnapKey started successfully');
 }
